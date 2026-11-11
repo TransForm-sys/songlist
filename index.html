@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="歌单 · 在线点歌" />
+    <style>
+      html { background: #101010; color-scheme: dark; }
+      html[data-theme='light'] { background: #f4f4f3; color-scheme: light; }
+    </style>
+    <script>
+      // 在首屏渲染前恢复主题，避免白/黑闪一下（与原站做法一致）
+      ;(() => {
+        let theme = 'dark'
+        try {
+          // ?theme=light / ?theme=dark 可以强制指定，方便直接把亮色链接发给别人
+          const forced = new URLSearchParams(location.search).get('theme')
+          if (forced === 'light' || forced === 'dark') {
+            theme = forced
+          } else if (localStorage.getItem('vtuber-song-list:theme') === 'light') {
+            theme = 'light'
+          }
+        } catch {}
+        document.documentElement.dataset.theme = theme
+      })()
+    </script>
+    <script>
+      // 歌单在左侧还是右侧，同样要在首屏前定好，否则会看到它"跳"一下
+      ;(() => {
+        let side = 'right'
+        try {
+          const forced = new URLSearchParams(location.search).get('side')
+          const saved = localStorage.getItem('vtuber-song-list:side')
+          if (forced === 'left' || forced === 'right') side = forced
+          else if (saved === 'left' || saved === 'right') side = saved
+        } catch {}
+        document.documentElement.dataset.side = side
+      })()
+    </script>
+    <title>歌单</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

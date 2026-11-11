@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <style>
+      html { background: #101010; color-scheme: dark; }
+      html[data-theme='light'] { background: #f4f4f3; color-scheme: light; }
+    </style>
+    <script>
+      // 后台沿用同一套主题键，切来切去不会闪
+      ;(() => {
+        let theme = 'dark'
+        try {
+          const forced = new URLSearchParams(location.search).get('theme')
+          if (forced === 'light' || forced === 'dark') theme = forced
+          else if (localStorage.getItem('vtuber-song-list:theme') === 'light') theme = 'light'
+        } catch {}
+        document.documentElement.dataset.theme = theme
+      })()
+    </script>
+    <title>歌单后台</title>
+  </head>
+  <body>
+    <div id="admin-app"></div>
+    <script type="module" src="/src/admin/main.ts"></script>
+  </body>
+</html>

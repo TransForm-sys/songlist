@@ -1,0 +1,36 @@
+{
+  "title": "示例主播 · 点歌插件位（这里写一句副标题）",
+  "bio": "把这段换成主播的自我介绍。喜欢唱什么、什么时间段播、点歌有什么讲究，都可以写在这里。",
+  "avatar": "",
+  "cover": "",
+  "tags": ["歌势", "示例标签", "Bilibili"],
+  "links": [
+    { "label": "B 站主页", "url": "https://space.bilibili.com/0" }
+  ],
+  "blocks": [
+    {
+      "type": "notice",
+      "title": "点歌提示",
+      "content": "把这段换成真正的点歌规则，比如粉丝牌等级、CD 时长、SC 点歌怎么算。\n内容支持换行，直接在这里分段就行。"
+    },
+    {
+      "type": "list",
+      "title": "适合点歌的范围",
+      "items": ["华语流行", "日语流行", "抒情慢歌"]
+    },
+    {
+      "type": "kv",
+      "title": "直播信息",
+      "items": [
+        { "label": "平台", "value": "Bilibili" },
+        { "label": "直播间", "value": "21465419" },
+        { "label": "开播时间", "value": "每晚 20:00" }
+      ]
+    },
+    {
+      "type": "text",
+      "title": "自我介绍",
+      "content": "这里可以放更长的主播介绍，支持换行展示。"
+    }
+  ]
+}

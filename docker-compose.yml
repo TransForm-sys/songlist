@@ -1,0 +1,23 @@
+services:
+  songlist:
+    build: .
+    image: songlist:latest
+    container_name: songlist
+    restart: unless-stopped
+    # 只映射到本机，由 Nginx / 1Panel 反向代理对外
+    ports:
+      - '127.0.0.1:5181:5181'
+    environment:
+      DATA_DIR: /data
+      STATIC_DIR: /app/dist
+      # 账号密码不写在这里：第一次启动会在日志里打印随机密码，
+      # 也可以先用 ADMIN_PASSWORD 建号，登录改完密码后删掉这行。
+      ADMIN_USER: admin
+      # 全站 HTTPS 时保持 1；纯 http 调试时改成 0，否则登不上
+      COOKIE_SECURE: '1'
+      TRUST_PROXY: '1'
+      BACKUP_KEEP: '60'
+      LOG_LEVEL: silent
+    volumes:
+      # 数据（SQLite + 备份 + 上传图片）落在宿主机 ./data
+      - ./data:/data

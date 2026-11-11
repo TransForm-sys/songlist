@@ -1,0 +1,39 @@
+[Unit]
+Description=Vtuber Songlist (前台 + 后台 + API)
+Documentation=file:///opt/songlist/app/DEPLOY.md
+After=network-online.target
+Wants=network-online.target
+# 崩溃循环时不要疯狂重启（这两个键属于 [Unit]，放 [Service] 里 systemd 会忽略并告警）
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=songlist
+Group=songlist
+WorkingDirectory=/opt/songlist/app
+
+# 所有配置都放这里，权限 600，不要把密码写进仓库
+EnvironmentFile=/opt/songlist/app.env
+
+ExecStart=/usr/bin/node server/index.mjs
+
+Restart=always
+RestartSec=3
+
+# 加固：只允许写数据目录
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+ReadWritePaths=/opt/songlist/data
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=songlist
+
+[Install]
+WantedBy=multi-user.target

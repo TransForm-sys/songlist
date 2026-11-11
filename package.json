@@ -1,0 +1,38 @@
+{
+  "name": "vtuber-songlist",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@12.4.1",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:server": "node --watch server/index.mjs",
+    "dev:all": "node scripts/dev-all.mjs",
+    "server": "node server/index.mjs",
+    "start": "node server/index.mjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "verify": "esbuild scripts/verify.ts --bundle --platform=node --format=esm --log-level=error --outfile=node_modules/.cache/verify.mjs && node node_modules/.cache/verify.mjs",
+    "test:api": "node scripts/api-test.mjs",
+    "reset-password": "node scripts/reset-password.mjs",
+    "data": "node scripts/reset-data.mjs",
+    "e2e": "node scripts/e2e.mjs",
+    "e2e:admin": "node scripts/e2e-admin.mjs"
+  },
+  "dependencies": {
+    "pinyin-pro": "^3.26.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.0",
+    "esbuild": "0.28.2",
+    "typescript": "~5.9.0",
+    "vite": "^7.1.0"
+  },
+  "allowScripts": {
+    "esbuild": true
+  }
+}

@@ -1,0 +1,896 @@
+/* ---------------------------------------------------------------
+   侧栏式布局（stage / side / 列表行 / 筛选面板）
+   这个文件在 style.css 之后加载：
+   · 只负责「新布局」的结构与视觉
+   · 搜索框、下拉、Toast、弹窗、加载态等仍然用 style.css 里的原样式
+   · 行高变量在这里覆盖（:root 同权重，后加载者生效）
+--------------------------------------------------------------- */
+
+:root {
+  /* 桌面行高：歌名 22px + 副行 12.5px + 间距，76 刚好不挤 */
+  --row-height: 76px;
+  --side-width: 520px;
+  --side-pad: 30px;
+}
+
+/* ---------------------------- 舞台 ---------------------------- */
+
+.stage {
+  position: relative;
+  min-height: 100dvh;
+  isolation: isolate;
+}
+
+/* 背景层：固定不动，列表自己滚 */
+.stage-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-color: var(--canvas);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center top;
+}
+
+/* 没设置背景图时的兜底：一层很淡的径向渐变，不至于是块死黑 */
+.stage-bg.is-plain {
+  background-image:
+    radial-gradient(120% 90% at 78% 18%, #ffffff12 0%, transparent 58%),
+    radial-gradient(90% 70% at 18% 92%, #ffffff0a 0%, transparent 60%);
+}
+
+/*
+ * 连背景图都没有、但有头像时：拿头像放大模糊当底图。
+ * 比纯黑好看，也比再让用户多传一张图省事。
+ */
+.stage-blur {
+  position: fixed;
+  inset: -12%;
+  z-index: 0;
+  background-size: cover;
+  background-position: center 30%;
+  filter: blur(56px) saturate(0.8) brightness(0.5);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+:root[data-theme='light'] .stage-blur {
+  filter: blur(56px) saturate(0.8) brightness(1.25);
+  opacity: 0.7;
+}
+
+/* 遮罩：把插画压暗，保证侧栏上的文字可读；朝向跟着侧栏走 */
+.stage-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(90deg, #10101000 36%, #1010105e 70%, #101010b8 100%);
+}
+
+:root[data-side='left'] .stage-mask {
+  background: linear-gradient(270deg, #10101000 36%, #1010105e 70%, #101010b8 100%);
+}
+
+:root[data-theme='light'] .stage-mask {
+  background: linear-gradient(90deg, #f4f4f300 36%, #f4f4f370 70%, #f4f4f3c8 100%);
+}
+
+:root[data-theme='light'][data-side='left'] .stage-mask {
+  background: linear-gradient(270deg, #f4f4f300 36%, #f4f4f370 70%, #f4f4f3c8 100%);
+}
+
+/* ---------------------------- 侧栏 ---------------------------- */
+
+.side {
+  position: relative;
+  z-index: 2;
+  width: min(var(--side-width), 100%);
+  height: 100dvh;
+  margin-left: auto; /* 默认在右 */
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--side-pad);
+  /*
+   * 面板不再是一块实心板：从「外侧完全透明」渐变到「内侧半透明」，
+   * 和背景插画自然衔接（参考图二那种"浮在图上"的感觉）。
+   * 因此也去掉了那条 1px 边框 —— 有边框就会露出接缝。
+   */
+  background: linear-gradient(90deg, #10101000 0%, #1010108c 26%, #101010c4 62%, #101010d9 100%);
+}
+
+:root[data-side='left'] .side {
+  margin-left: 0;
+  margin-right: auto;
+  /* 镜像：外侧（右边）透明 */
+  background: linear-gradient(270deg, #10101000 0%, #1010108c 26%, #101010c4 62%, #101010d9 100%);
+}
+
+:root[data-theme='light'] .side {
+  background: linear-gradient(90deg, #f4f4f300 0%, #f4f4f3a8 26%, #f4f4f3d6 62%, #f4f4f3e8 100%);
+}
+
+:root[data-theme='light'][data-side='left'] .side {
+  background: linear-gradient(270deg, #f4f4f300 0%, #f4f4f3a8 26%, #f4f4f3d6 62%, #f4f4f3e8 100%);
+}
+
+/* ---------------------------- 头部 ---------------------------- */
+
+.side-head {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 0 12px;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--control);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.brand-name {
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.brand-gap {
+  flex: 1;
+}
+
+.live-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.live-link:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.icon-button {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--muted);
+}
+
+.icon-button:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.icon-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title-row h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+}
+
+.title-row .total {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--dim);
+  margin-left: 10px;
+  letter-spacing: 0;
+}
+
+.random-button {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+  border-radius: 8px;
+}
+
+.random-button:hover {
+  color: var(--text);
+}
+
+.random-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* 公告：默认一行，点开看全文（移动端省高度用） */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--notice-border);
+  border-radius: 10px;
+  background: var(--notice-background);
+  color: var(--notice-text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.notice-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 16px;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--notice-label-background);
+  color: var(--notice-label-text);
+}
+
+.notice-text {
+  min-width: 0;
+  cursor: pointer;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  overflow: hidden;
+}
+
+.notice.is-open .notice-text {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+
+/* ---------------------------- 工具行 ---------------------------- */
+
+.tool-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tool-row .search-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-anchor {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.filter-button {
+  height: 40px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 10px;
+  background: var(--control);
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.filter-button:hover {
+  background: var(--control-hover);
+  color: var(--text);
+}
+
+.filter-button.is-active {
+  background: var(--control-active);
+  color: var(--text);
+}
+
+.filter-button .badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--canvas);
+  font-size: 10.5px;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* ---------------------------- 筛选面板 ---------------------------- */
+
+.filter-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 41;
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 48px var(--shadow);
+  overflow: hidden;
+}
+
+.filter-panel-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.filter-panel-head b {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.filter-panel-head .spacer {
+  flex: 1;
+}
+
+.filter-panel-body {
+  overflow-y: auto;
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.filter-group h4 {
+  margin: 0 0 7px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--dim);
+  letter-spacing: 0.4px;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-chip {
+  height: 28px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 8px;
+  background: var(--control);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.filter-chip:hover {
+  background: var(--control-hover);
+  color: var(--text);
+}
+
+.filter-chip.is-active {
+  background: var(--text);
+  color: var(--canvas);
+}
+
+.filter-chip .n {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.filter-search {
+  width: 100%;
+  height: 32px;
+  margin-bottom: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--control-subtle);
+  color: var(--text);
+  font-size: 12.5px;
+}
+
+.filter-search:focus {
+  outline: none;
+  border-color: var(--line-strong);
+  background: var(--control);
+}
+
+.filter-panel-foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}
+
+.filter-panel-foot .done {
+  margin-left: auto;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 9px;
+  background: var(--text);
+  color: var(--canvas);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.filter-panel-foot .clear {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.filter-panel-foot .clear:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.filter-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+/* 筛选面板打开时别让背景跟着滚 */
+body.is-filter-open {
+  overflow: hidden;
+}
+
+.filter-empty {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--dim);
+}
+
+/* ---------------------------- 列表行 ---------------------------- */
+
+.song-row {
+  padding: 0 8px 0 0;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  transition: background-color 0.12s ease;
+}
+
+.song-row:last-child {
+  border-bottom: 0;
+}
+
+.song-row:hover {
+  background: var(--hover);
+}
+
+.song-row.is-active {
+  background: var(--control-active);
+}
+
+.row-index {
+  width: 32px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--dim);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.4px;
+}
+
+.row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.row-title {
+  font-size: 22px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-sub .dot {
+  opacity: 0.5;
+}
+
+.row-title .new-badge {
+  font-size: 10px;
+  line-height: 14px;
+  padding: 0 4px;
+  margin-left: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  color: var(--muted);
+  vertical-align: 3px;
+}
+
+/* 需要额外条件的曲目：只有图标，没有文字 */
+.row-paid {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: 2px;
+  margin-left: 7px;
+  color: var(--dim);
+}
+
+.row-paid svg {
+  width: 13px;
+  height: 13px;
+}
+
+.song-row:hover .row-paid {
+  color: var(--mark);
+}
+
+/* 页脚上方的一行中性说明（有这类曲目时才出现） */
+.paid-note {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+.paid-note svg {
+  width: 11px;
+  height: 11px;
+  vertical-align: -1px;
+  margin-right: 4px;
+}
+
+.row-copy-hint {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--dim);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.song-row:hover .row-copy-hint,
+.song-row:focus-visible .row-copy-hint {
+  opacity: 1;
+}
+
+/* ---------------------------- 底部 ---------------------------- */
+
+.side-foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+.side-switch {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--control);
+  color: var(--muted);
+}
+
+.side-switch:hover {
+  background: var(--control-hover);
+  color: var(--text);
+}
+
+.side-switch svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 侧栏在左时，切换按钮和版权信息对调位置（按钮永远贴着「内侧」） */
+:root[data-side='left'] .side-switch {
+  order: 2;
+}
+
+:root[data-side='left'] .side-foot-meta {
+  order: 1;
+  margin-left: 0;
+  margin-right: auto;
+  text-align: left;
+}
+
+.side-foot-meta {
+  margin-left: auto;
+  text-align: right;
+  min-width: 0;
+  /* 备案号绝对不能从中间断开，只在分隔点处换行 */
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.side-foot-meta a {
+  color: inherit;
+  text-decoration: none;
+  border-radius: 4px;
+  padding: 1px 3px;
+  margin: -1px -3px;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+/* 悬停用轻微高亮，而不是下划线（划线会让备案号看着不整齐） */
+.side-foot-meta a:hover {
+  color: var(--text);
+  background: var(--control-hover);
+  text-decoration: none;
+}
+
+/* 两个备案号之间的分隔点 */
+.meta-sep {
+  opacity: 0.55;
+  margin: 0 5px;
+}
+
+/* 公安备案：图标 + 备案号做成同一个链接，图标在前。
+   用 inline（不用 inline-flex），图标走 vertical-align，
+   这样它和前面的 ICP 备案号在同一行基线上，不会一高一低。 */
+.beian-link {
+  display: inline;
+  white-space: nowrap;
+}
+
+.beian-icon {
+  display: inline-block;
+  width: 11px;
+  height: 13px;
+  vertical-align: -2px;
+  margin-right: 3px;
+  object-fit: contain;
+  opacity: 0.95;
+}
+
+.side-foot-hint {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: auto;
+}
+
+/* 提示文案在窄侧栏里会把备案号挤到第二行，所以整体不显示
+   （行内 hover 时本来就有「单击点歌」提示） */
+.side-foot-hint {
+  display: none;
+}
+
+:root[data-side='left'] .side-foot-hint {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* ---------------------------- 平板 ---------------------------- */
+
+@media (max-width: 1023px) {
+  :root {
+    --side-width: 46vw;
+    --side-pad: 22px;
+  }
+
+  .title-row h1 {
+    font-size: 28px;
+  }
+
+  .row-title {
+    font-size: 20px;
+  }
+
+  :root {
+    --row-height: 72px;
+  }
+}
+
+/* ---------------------------- 手机 ---------------------------- */
+
+@media (max-width: 767px) {
+  :root {
+    --side-pad: 16px;
+    --row-height: 72px;
+  }
+
+  .side {
+    width: 100%;
+    border: 0;
+    /*
+     * 单列时面板铺满整屏，但**不能做成实心** ——
+     * 否则背景图/兜底模糊层全被盖住，手机上就成了纯黑一片。
+     * 这里用 58% → 72% 的竖向渐变：文字有底，背景也透得出来。
+     */
+    background: linear-gradient(180deg, #10101094 0%, #101010b8 100%);
+  }
+
+  :root[data-theme='light'] .side {
+    background: linear-gradient(180deg, #f4f4f3b0 0%, #f4f4f3d6 100%);
+  }
+
+  .side-head {
+    gap: 10px;
+    padding: 14px 0 10px;
+  }
+
+  .title-row h1 {
+    font-size: 26px;
+  }
+
+  .title-row .total {
+    font-size: 12px;
+    margin-left: 8px;
+  }
+
+  .row-title {
+    font-size: 20px;
+  }
+
+  .row-index {
+    width: 28px;
+  }
+
+  .row-copy-hint {
+    display: none;
+  }
+
+  /* 底部只留一行小字，省出来的高度全给列表 */
+  .side-foot {
+    font-size: 11px;
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .side-foot-hint {
+    display: none;
+  }
+
+  .side-foot-meta {
+    text-align: left;
+    margin-left: 0;
+  }
+
+  .side-switch {
+    display: none;
+  }
+
+  /* 筛选变成贴底弹层 */
+  .filter-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    max-height: 74svh;
+    border-radius: 16px 16px 0 0;
+    border-bottom: 0;
+  }
+
+  .filter-chip {
+    height: 32px;
+    font-size: 13px;
+  }
+
+  /* 滚动时把标题和公告收起来，多出两行列表 */
+  .collapsible {
+    overflow: hidden;
+    max-height: 200px;
+    opacity: 1;
+    transition:
+      max-height 0.26s ease,
+      opacity 0.2s ease,
+      margin 0.26s ease;
+  }
+
+  .stage.is-compact .collapsible {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: -10px;
+  }
+}
+
+/* ---------------------------- 背景视频 ---------------------------- */
+
+.stage-video {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  /* 视频比静态图更"花"，稍微压一点亮度和饱和，侧栏文字更好读 */
+  filter: saturate(0.92) brightness(0.92);
+}
+
+/* 视频在播时遮罩略加重，保证侧栏上的文字对比度 */
+.stage.has-video .stage-mask {
+  background: linear-gradient(90deg, #10101000 32%, #10101070 68%, #101010c4 100%);
+}
+
+:root[data-side='left'] .stage.has-video .stage-mask {
+  background: linear-gradient(270deg, #10101000 32%, #10101070 68%, #101010c4 100%);
+}
+
+:root[data-theme='light'] .stage.has-video .stage-mask {
+  background: linear-gradient(90deg, #f4f4f300 32%, #f4f4f382 68%, #f4f4f3d2 100%);
+}
+
+:root[data-theme='light'][data-side='left'] .stage.has-video .stage-mask {
+  background: linear-gradient(270deg, #f4f4f300 32%, #f4f4f382 68%, #f4f4f3d2 100%);
+}
+/* 视频接管背景后，把兜底模糊层淡出 */
+.stage-blur.is-hidden {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}

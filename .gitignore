@@ -1,0 +1,8 @@
+node_modules/
+dist/
+server/data/
+*.log
+.DS_Store
+# 本地测试产物（临时实例、截图），不进版本控制
+.tmp/
+.shots/
